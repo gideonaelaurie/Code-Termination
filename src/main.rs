@@ -1,8 +1,6 @@
 use bevy::prelude::*;
-use bevy::window::WindowResolution;
+use bevy::window::{WindowMode, MonitorSelection};
 
-const WINDOW_WIDTH: u32 = 1280;
-const WINDOW_HEIGHT: u32 = 720;
 const PLAYER_SIZE: Vec2 = Vec2::new(96.0, 96.0);
 const GROUND_SIZE: Vec2 = Vec2::new(2200.0, 120.0);
 const PLAYER_SPEED: f32 = 420.0;
@@ -70,6 +68,12 @@ enum AppState {
 #[derive(Component)]
 struct TitleScreenUI;
 
+#[derive(Component, Clone, Copy)]
+enum TitleButtonAction {
+    Play,
+    Quit,
+}
+
 #[derive(Component)]
 struct SettingsMenuUI;
 
@@ -85,8 +89,7 @@ fn main() {
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "gidames".into(),
-                resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
-                resizable: false,
+                mode: WindowMode::BorderlessFullscreen(MonitorSelection::Primary),
                 ..default()
             }),
             ..default()
@@ -96,7 +99,7 @@ fn main() {
         // Title screen
         .add_systems(OnEnter(AppState::TitleScreen), setup_title_screen)
         .add_systems(OnExit(AppState::TitleScreen), cleanup_title_screen)
-        .add_systems(Update, play_button_system.run_if(in_state(AppState::TitleScreen)))
+        .add_systems(Update, title_button_system.run_if(in_state(AppState::TitleScreen)))
         // Game
         .add_systems(OnEnter(AppState::Game), reset_player_system)
         .add_systems(Update, toggle_settings_menu)
@@ -180,14 +183,42 @@ fn setup_title_screen(mut commands: Commands) {
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
                 border: UiRect::all(Val::Px(2.0)),
+                margin: UiRect::bottom(Val::Px(15.0)),
                 ..default()
             },
             BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
             BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
+            TitleButtonAction::Play,
         ))
         .with_children(|btn| {
             btn.spawn((
                 Text::new("PLAY"),
+                TextFont {
+                    font_size: 24.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.0, 1.0, 0.0)),
+            ));
+        });
+
+        // Quit Button
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(200.0),
+                height: Val::Px(50.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border: UiRect::all(Val::Px(2.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
+            BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
+            TitleButtonAction::Quit,
+        ))
+        .with_children(|btn| {
+            btn.spawn((
+                Text::new("QUIT"),
                 TextFont {
                     font_size: 24.0,
                     ..default()
@@ -204,18 +235,26 @@ fn cleanup_title_screen(mut commands: Commands, query: Query<Entity, With<TitleS
     }
 }
 
-fn play_button_system(
+fn title_button_system(
     mut interaction_query: Query<
-        (&Interaction, &mut BackgroundColor),
+        (&Interaction, &TitleButtonAction, &mut BackgroundColor),
         (Changed<Interaction>, With<Button>),
     >,
     mut next_state: ResMut<NextState<AppState>>,
+    mut app_exit_events: MessageWriter<AppExit>,
 ) {
-    for (interaction, mut bg_color) in &mut interaction_query {
+    for (interaction, action, mut bg_color) in &mut interaction_query {
         match *interaction {
             Interaction::Pressed => {
                 *bg_color = BackgroundColor(Color::srgb(0.3, 0.3, 0.4));
-                next_state.set(AppState::Game);
+                match action {
+                    TitleButtonAction::Play => {
+                        next_state.set(AppState::Game);
+                    }
+                    TitleButtonAction::Quit => {
+                        app_exit_events.write(AppExit::Success);
+                    }
+                }
             }
             Interaction::Hovered => {
                 *bg_color = BackgroundColor(Color::srgb(0.2, 0.2, 0.25));
