@@ -1,5 +1,5 @@
 {
-  description = "Minimal Rust development environment for gidames";
+  description = "Minimal Rust development environment for Code-Termination";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

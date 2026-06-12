@@ -3,6 +3,13 @@
 version = 4
 
 [[package]]
+name = "Code-Termination"
+version = "0.1.0"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "ab_glyph"
 version = "0.2.32"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2563,13 +2570,6 @@ dependencies = [
  "r-efi 6.0.0",
  "wasip2",
  "wasip3",
-]
-
-[[package]]
-name = "gidames"
-version = "0.1.0"
-dependencies = [
- "bevy",
 ]
 
 [[package]]

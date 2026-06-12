@@ -2,3 +2,7 @@
 .direnv/
 /result
 /target
+*.d
+achievements.txt
+*savegame.txt
+*save_game.txt
