@@ -195,6 +195,21 @@ pub fn stdin_is_tty() -> bool {
     true
 }
 
+pub fn is_hacker_mode_active() -> bool {
+    let paths = [
+        std::path::PathBuf::from("dlc_signal.txt"),
+        std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("dlc_signal.txt"),
+    ];
+    for path in &paths {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            if content.trim() == "HACKER-MODE-DLC" {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn run_auto_update() {
     let repo = "gideonaelaurie/Code-Termination";
     let current_commit = env!("GIT_HASH");
@@ -230,7 +245,7 @@ pub fn run_auto_update() {
     }
 
     let (signal_file, expected_signal) = if branch == "DLC" {
-        ("dlc_signal.txt", "DLC_")
+        ("dlc_signal.txt", "DLC")
     } else {
         ("update_signal.txt", "IDN:226531")
     };
@@ -506,6 +521,21 @@ pub fn setup_game_hud(
             },
         ));
 
+        if is_hacker_mode_active() {
+            parent.spawn((
+                Text::new("H@CKER M0D3 ACTIVE"),
+                TextFont {
+                    font_size: 16.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 0.0, 0.0)),
+                Node {
+                    margin: UiRect::bottom(Val::Px(10.0)),
+                    ..default()
+                },
+            ));
+        }
+
         if tutorial_visible {
             parent.spawn((
                 TutorialHUD,
@@ -751,7 +781,7 @@ pub fn load_level(
                     is_destroyed: false,
                 },
                 Boss {
-                    health: 3,
+                    health: if is_hacker_mode_active() { 6 } else { 3 },
                     invulnerable_timer: 0.0,
                     state: BossAttackState::Patrol,
                     state_timer: 0.0,

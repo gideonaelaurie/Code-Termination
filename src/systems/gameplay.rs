@@ -325,12 +325,13 @@ pub fn handle_damage(
 
         // Apply damage if not invulnerable
         if take_damage && ram_state.invulnerability_timer == 0.0 {
-            if ram_state.current >= 2 {
-                ram_state.current -= 2;
+            let damage = if crate::helpers::is_hacker_mode_active() { 4 } else { 2 };
+            if ram_state.current >= damage {
+                ram_state.current -= damage;
             } else {
                 ram_state.current = 0;
             }
-            ram_state.invulnerability_timer = 1.0; // 1 second invulnerability
+            ram_state.invulnerability_timer = if crate::helpers::is_hacker_mode_active() { 0.5 } else { 1.0 };
 
             // If crash, transition to DeathScreen
             if ram_state.current == 0 {

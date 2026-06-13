@@ -36,10 +36,25 @@ pub fn setup_title_screen(
             },
             TextColor(Color::srgb(0.0, 1.0, 0.0)),
             Node {
-                margin: UiRect::bottom(Val::Px(40.0)),
+                margin: UiRect::bottom(Val::Px(if crate::helpers::is_hacker_mode_active() { 10.0 } else { 40.0 })),
                 ..default()
             },
         ));
+
+        if crate::helpers::is_hacker_mode_active() {
+            parent.spawn((
+                Text::new("H@CKER M0D3 ACTIVE"),
+                TextFont {
+                    font_size: 24.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(1.0, 0.0, 0.0)),
+                Node {
+                    margin: UiRect::bottom(Val::Px(30.0)),
+                    ..default()
+                },
+            ));
+        }
 
         // Play Button (Continue)
         parent.spawn((
