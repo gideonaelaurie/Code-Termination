@@ -18,11 +18,7 @@ jobs:
       - name: Validate Passcode
         run: |
           echo "::add-mask::${{ github.event.inputs.passcode }}"
-          EXPECTED="${{ secrets.GAME_UPDATE_PASSCODE }}"
-          if [ -z "$EXPECTED" ]; then
-            EXPECTED="95443"
-          fi
-          if [ "${{ github.event.inputs.passcode }}" != "$EXPECTED" ]; then
+          if [ -z "${{ secrets.GAME_UPDATE_PASSCODE }}" ] || [ "${{ github.event.inputs.passcode }}" != "${{ secrets.GAME_UPDATE_PASSCODE }}" ]; then
             echo "Error: Invalid passcode"
             exit 1
           fi
