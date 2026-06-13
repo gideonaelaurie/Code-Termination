@@ -208,8 +208,35 @@ pub fn run_auto_update() {
         return;
     }
 
+    let mut branch = "main".to_string();
+    let repo_dir = env!("CARGO_MANIFEST_DIR");
+    let is_git_clone = std::path::Path::new(repo_dir).join(".git").exists();
+    if is_git_clone {
+        if let Ok(branch_output) = std::process::Command::new("git")
+            .arg("-C")
+            .arg(repo_dir)
+            .arg("rev-parse")
+            .arg("--abbrev-ref")
+            .arg("HEAD")
+            .output()
+        {
+            if branch_output.status.success() {
+                let local_branch = String::from_utf8_lossy(&branch_output.stdout).trim().to_string();
+                if !local_branch.is_empty() {
+                    branch = local_branch;
+                }
+            }
+        }
+    }
+
+    let (signal_file, expected_signal) = if branch == "DLC" {
+        ("dlc_signal.txt", "DLC_")
+    } else {
+        ("update_signal.txt", "IDN:226531")
+    };
+
     // Fetch the update signal first
-    let signal_url = format!("https://raw.githubusercontent.com/{}/main/update_signal.txt", repo);
+    let signal_url = format!("https://raw.githubusercontent.com/{}/{}/{}", repo, branch, signal_file);
     let signal_output = std::process::Command::new("curl")
         .arg("-s")
         .arg("-m")
@@ -220,15 +247,15 @@ pub fn run_auto_update() {
     let Ok(signal_output) = signal_output else { return; };
     if !signal_output.status.success() { return; }
     let signal_str = String::from_utf8_lossy(&signal_output.stdout);
-    if !signal_str.contains("IDN:226531") {
+    if !signal_str.contains(expected_signal) {
         // Signal not found or incorrect, ignore update check
         return;
     }
 
-    println!("[Auto-Updater] Active update signal detected. Checking for new updates...");
+    println!("[Auto-Updater] Active update signal detected on branch {}. Checking for new updates...", branch);
     
-    // Fetch latest commit SHA from main branch
-    let url = format!("https://api.github.com/repos/{}/commits/main", repo);
+    // Fetch latest commit SHA from the correct branch
+    let url = format!("https://api.github.com/repos/{}/commits/{}", repo, branch);
     let output = std::process::Command::new("curl")
         .arg("-s")
         .arg("-m")
@@ -312,6 +339,8 @@ pub fn run_auto_update() {
                     let clone_url = format!("https://github.com/{}.git", repo);
                     let clone_status = std::process::Command::new("git")
                         .arg("clone")
+                        .arg("-b")
+                        .arg(&branch)
                         .arg(&clone_url)
                         .arg(&temp_dir)
                         .status();
