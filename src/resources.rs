@@ -32,11 +32,24 @@ impl Default for LevelState {
 pub enum AppState {
     #[default]
     TitleScreen,
+    ModeSelect,
     Game,
+    BossTransition,
     Settings,
     Achievements,
     DeathScreen,
     DemoComplete,
+}
+
+#[derive(Resource, Clone, Copy, PartialEq, Eq)]
+pub struct HackerMode {
+    pub active: bool,
+}
+
+impl Default for HackerMode {
+    fn default() -> Self {
+        Self { active: false }
+    }
 }
 
 #[derive(Resource, Default)]

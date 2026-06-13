@@ -6,3 +6,5 @@ pub mod demo_complete;
 pub mod player;
 pub mod enemy;
 pub mod gameplay;
+pub mod boss_transition;
+pub mod mode_select;

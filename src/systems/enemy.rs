@@ -9,6 +9,7 @@ pub fn update_enemies(
     overclock: Res<OverclockState>,
     mut query: Query<(&mut Transform, &mut Enemy, &mut Visibility, &mut Sprite, Option<&mut Boss>), Without<Player>>,
     player_query: Query<&Transform, With<Player>>,
+    hacker_mode: Res<HackerMode>,
 ) {
     let delta = time.delta_secs();
     let mut speed_multiplier = match overclock.mode {
@@ -16,7 +17,7 @@ pub fn update_enemies(
         CpuClockMode::Underclocked => 0.4,
         CpuClockMode::Normal => 1.0,
     };
-    if crate::helpers::is_hacker_mode_active() {
+    if hacker_mode.active {
         speed_multiplier *= 1.6;
     }
 
@@ -91,7 +92,7 @@ pub fn update_enemies(
                 }
                 BossAttackState::Ram => {
                     // Charge at high speed
-                    let charge_speed = if crate::helpers::is_hacker_mode_active() { 900.0 } else { 600.0 };
+                    let charge_speed = if hacker_mode.active { 900.0 } else { 600.0 };
                     transform.translation.x += boss.ram_direction * charge_speed * speed_multiplier * delta;
 
                     // Bound checks
@@ -128,7 +129,7 @@ pub fn update_enemies(
                         // Stationary warning
                     } else {
                         // Sweep across the ground to the other side
-                        let sweep_speed = if crate::helpers::is_hacker_mode_active() { 700.0 } else { 450.0 };
+                        let sweep_speed = if hacker_mode.active { 700.0 } else { 450.0 };
                         let diff = boss.sweep_target_x - transform.translation.x;
                         if diff.abs() > 10.0 {
                             let sweep_dir = diff.signum();

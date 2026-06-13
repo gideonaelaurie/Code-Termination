@@ -1,8 +1,20 @@
 use bevy::prelude::*;
 use crate::components::*;
 use crate::resources::*;
+use crate::helpers::save_game;
+use crate::constants::GROUND_Y;
 
-pub fn setup_title_screen(
+#[derive(Component)]
+pub struct ModeSelectUI;
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Component)]
+pub enum ModeSelectButtonAction {
+    Normal,
+    Hacker,
+    Back,
+}
+
+pub fn setup_mode_select(
     mut commands: Commands,
     hud_query: Query<Entity, With<GameHUD>>,
     mut menu_selection: ResMut<MenuSelection>,
@@ -12,9 +24,8 @@ pub fn setup_title_screen(
         commands.entity(entity).despawn();
     }
 
-    // Spawn the black background container overlay
     commands.spawn((
-        TitleScreenUI,
+        ModeSelectUI,
         Node {
             width: Val::Percent(100.0),
             height: Val::Percent(100.0),
@@ -24,124 +35,82 @@ pub fn setup_title_screen(
             flex_direction: FlexDirection::Column,
             ..default()
         },
-        BackgroundColor(Color::srgb(0.0, 0.0, 0.0)),
+        BackgroundColor(Color::srgb(0.08, 0.09, 0.14)), // dark blue/gray
     ))
     .with_children(|parent| {
-        // Title Text
+        // Mode Select Title
         parent.spawn((
-            Text::new("Code-Termination"),
+            Text::new("SELECT OPERATION MODE"),
             TextFont {
-                font_size: 64.0,
+                font_size: 40.0,
                 ..default()
             },
-            TextColor(Color::srgb(0.0, 1.0, 0.0)),
+            TextColor(Color::srgb(0.0, 1.0, 1.0)), // Neon Cyan
             Node {
-                margin: UiRect::bottom(Val::Px(if crate::helpers::is_hacker_mode_active() { 10.0 } else { 40.0 })),
+                margin: UiRect::bottom(Val::Px(40.0)),
                 ..default()
             },
         ));
 
-        if crate::helpers::is_hacker_mode_active() {
-            parent.spawn((
-                Text::new("H@CKER M0D3 ACTIVE"),
+        // Normal Mode Button
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(320.0),
+                height: Val::Px(55.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border: UiRect::all(Val::Px(2.0)),
+                margin: UiRect::bottom(Val::Px(15.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
+            BorderColor::all(Color::srgb(0.0, 1.0, 1.0)),
+            ModeSelectButtonAction::Normal,
+        ))
+        .with_children(|btn| {
+            btn.spawn((
+                Text::new("NORMAL MODE"),
                 TextFont {
-                    font_size: 24.0,
+                    font_size: 20.0,
+                    ..default()
+                },
+                TextColor(Color::srgb(0.0, 1.0, 1.0)),
+            ));
+        });
+
+        // Hacker Mode Button
+        parent.spawn((
+            Button,
+            Node {
+                width: Val::Px(320.0),
+                height: Val::Px(55.0),
+                justify_content: JustifyContent::Center,
+                align_items: AlignItems::Center,
+                border: UiRect::all(Val::Px(2.0)),
+                margin: UiRect::bottom(Val::Px(15.0)),
+                ..default()
+            },
+            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
+            BorderColor::all(Color::srgb(1.0, 0.0, 0.0)),
+            ModeSelectButtonAction::Hacker,
+        ))
+        .with_children(|btn| {
+            btn.spawn((
+                Text::new("H@CKER M0D3"),
+                TextFont {
+                    font_size: 20.0,
                     ..default()
                 },
                 TextColor(Color::srgb(1.0, 0.0, 0.0)),
-                Node {
-                    margin: UiRect::bottom(Val::Px(30.0)),
-                    ..default()
-                },
-            ));
-        }
-
-        // Play Button (Continue)
-        parent.spawn((
-            Button,
-            Node {
-                width: Val::Px(240.0),
-                height: Val::Px(50.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(2.0)),
-                margin: UiRect::bottom(Val::Px(15.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
-            BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
-            TitleButtonAction::Play,
-        ))
-        .with_children(|btn| {
-            btn.spawn((
-                Text::new("PLAY"),
-                TextFont {
-                    font_size: 24.0,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.0, 1.0, 0.0)),
             ));
         });
 
-        // New Game Button
+        // Back Button
         parent.spawn((
             Button,
             Node {
-                width: Val::Px(240.0),
-                height: Val::Px(50.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(2.0)),
-                margin: UiRect::bottom(Val::Px(15.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
-            BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
-            TitleButtonAction::NewGame,
-        ))
-        .with_children(|btn| {
-            btn.spawn((
-                Text::new("NEW GAME"),
-                TextFont {
-                    font_size: 24.0,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.0, 1.0, 0.0)),
-            ));
-        });
-
-        // Achievements Button
-        parent.spawn((
-            Button,
-            Node {
-                width: Val::Px(240.0),
-                height: Val::Px(50.0),
-                justify_content: JustifyContent::Center,
-                align_items: AlignItems::Center,
-                border: UiRect::all(Val::Px(2.0)),
-                margin: UiRect::bottom(Val::Px(15.0)),
-                ..default()
-            },
-            BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
-            BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
-            TitleButtonAction::Achievements,
-        ))
-        .with_children(|btn| {
-            btn.spawn((
-                Text::new("ACHIEVEMENTS"),
-                TextFont {
-                    font_size: 24.0,
-                    ..default()
-                },
-                TextColor(Color::srgb(0.0, 1.0, 0.0)),
-            ));
-        });
-
-        // Quit Button
-        parent.spawn((
-            Button,
-            Node {
-                width: Val::Px(240.0),
+                width: Val::Px(320.0),
                 height: Val::Px(50.0),
                 justify_content: JustifyContent::Center,
                 align_items: AlignItems::Center,
@@ -149,46 +118,45 @@ pub fn setup_title_screen(
                 ..default()
             },
             BackgroundColor(Color::srgb(0.12, 0.12, 0.15)),
-            BorderColor::all(Color::srgb(0.0, 1.0, 0.0)),
-            TitleButtonAction::Quit,
+            BorderColor::all(Color::srgb(0.5, 0.5, 0.5)),
+            ModeSelectButtonAction::Back,
         ))
         .with_children(|btn| {
             btn.spawn((
-                Text::new("QUIT"),
+                Text::new("BACK"),
                 TextFont {
-                    font_size: 24.0,
+                    font_size: 18.0,
                     ..default()
                 },
-                TextColor(Color::srgb(0.0, 1.0, 0.0)),
+                TextColor(Color::srgb(0.7, 0.7, 0.7)),
             ));
         });
     });
 }
 
-pub fn cleanup_title_screen(mut commands: Commands, query: Query<Entity, With<TitleScreenUI>>) {
+pub fn cleanup_mode_select(
+    mut commands: Commands,
+    query: Query<Entity, With<ModeSelectUI>>,
+) {
     for entity in &query {
         commands.entity(entity).despawn();
     }
 }
 
-pub fn title_button_system(
-    mut button_query: Query<
-        (Entity, &Interaction, &TitleButtonAction, &mut BackgroundColor),
-        With<Button>,
-    >,
+pub fn mode_select_button_system(
     mut next_state: ResMut<NextState<AppState>>,
-    mut app_exit_events: MessageWriter<AppExit>,
-    mut pending_load: ResMut<PendingGameLoad>,
+    mut hacker_mode: ResMut<HackerMode>,
     mut menu_selection: ResMut<MenuSelection>,
+    mut pending_load: ResMut<PendingGameLoad>,
     gamepads: Query<&Gamepad>,
     mut stick_neutral: Local<bool>,
+    mut button_query: Query<(Entity, &Interaction, &ModeSelectButtonAction, &mut BackgroundColor), With<Button>>,
 ) {
     let mut buttons = button_query.iter_mut().collect::<Vec<_>>();
     buttons.sort_by_key(|(_, _, action, _)| match action {
-        TitleButtonAction::Play => 0,
-        TitleButtonAction::NewGame => 1,
-        TitleButtonAction::Achievements => 2,
-        TitleButtonAction::Quit => 3,
+        ModeSelectButtonAction::Normal => 0,
+        ModeSelectButtonAction::Hacker => 1,
+        ModeSelectButtonAction::Back => 2,
     });
     let total_buttons = buttons.len();
 
@@ -254,35 +222,41 @@ pub fn title_button_system(
         }
     }
 
-    for (index, (_, interaction, _, mut bg_color)) in buttons.into_iter().enumerate() {
-        if *interaction == Interaction::Pressed {
-            *bg_color = BackgroundColor(Color::srgb(0.3, 0.3, 0.4));
-        } else if index == menu_selection.selected_index {
-            *bg_color = BackgroundColor(Color::srgb(0.2, 0.2, 0.25));
+    for (index, (_, _, action, mut bg_color)) in buttons.into_iter().enumerate() {
+        let base_color = match action {
+            ModeSelectButtonAction::Normal => Color::srgb(0.05, 0.05, 0.07),
+            ModeSelectButtonAction::Hacker => Color::srgb(0.05, 0.05, 0.07),
+            ModeSelectButtonAction::Back => Color::srgb(0.12, 0.12, 0.15),
+        };
+        let hover_color = match action {
+            ModeSelectButtonAction::Normal => Color::srgb(0.0, 0.3, 0.3),
+            ModeSelectButtonAction::Hacker => Color::srgb(0.4, 0.05, 0.05),
+            ModeSelectButtonAction::Back => Color::srgb(0.2, 0.2, 0.25),
+        };
+
+        if index == menu_selection.selected_index {
+            *bg_color = BackgroundColor(hover_color);
         } else {
-            *bg_color = BackgroundColor(Color::srgb(0.12, 0.12, 0.15));
+            *bg_color = BackgroundColor(base_color);
         }
     }
 
     if let Some(action) = trigger_action {
         match action {
-            TitleButtonAction::Play => {
-                pending_load.should_load = true;
+            ModeSelectButtonAction::Normal => {
+                hacker_mode.active = false;
+                pending_load.should_load = false;
+                save_game(-350.0, GROUND_Y, 6, true, 1, false);
                 next_state.set(AppState::Game);
             }
-            TitleButtonAction::NewGame => {
+            ModeSelectButtonAction::Hacker => {
+                hacker_mode.active = true;
                 pending_load.should_load = false;
-                if crate::helpers::has_dlc() {
-                    next_state.set(AppState::ModeSelect);
-                } else {
-                    next_state.set(AppState::Game);
-                }
+                save_game(-350.0, GROUND_Y, 6, true, 1, true);
+                next_state.set(AppState::Game);
             }
-            TitleButtonAction::Achievements => {
-                next_state.set(AppState::Achievements);
-            }
-            TitleButtonAction::Quit => {
-                app_exit_events.write(AppExit::Success);
+            ModeSelectButtonAction::Back => {
+                next_state.set(AppState::TitleScreen);
             }
         }
     }
