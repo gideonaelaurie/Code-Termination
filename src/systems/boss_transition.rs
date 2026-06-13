@@ -68,6 +68,7 @@ pub fn boss_transition_system(
     mut next_state: ResMut<NextState<AppState>>,
     mut pending_load: ResMut<PendingGameLoad>,
     mut text_query: Query<&mut Text, With<BossTransitionText>>,
+    mut bg_query: Query<&mut BackgroundColor, With<BossTransitionUI>>,
 ) {
     if !*initialized {
         *timer = 3.0;
@@ -75,6 +76,14 @@ pub fn boss_transition_system(
     }
 
     *timer -= time.delta_secs();
+
+    // Pulse red background in and out using a sine wave
+    let elapsed = 3.0 - *timer;
+    let pulse = (elapsed * std::f32::consts::PI * 2.0).sin().abs(); // 1Hz frequency
+    let red_val = 0.05 + pulse * 0.35; // pulses between 0.05 (almost black) and 0.40 (dim red)
+    if let Ok(mut bg) = bg_query.single_mut() {
+        bg.0 = Color::srgb(red_val, 0.01, 0.01);
+    }
 
     if let Ok(mut text) = text_query.single_mut() {
         text.0 = format!(

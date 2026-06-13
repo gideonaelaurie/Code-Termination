@@ -10,6 +10,7 @@ pub fn update_enemies(
     mut query: Query<(&mut Transform, &mut Enemy, &mut Visibility, &mut Sprite, Option<&mut Boss>), Without<Player>>,
     player_query: Query<&Transform, With<Player>>,
     hacker_mode: Res<HackerMode>,
+    speech_query: Query<(Entity, &ChildOf), With<BossSpeechText>>,
 ) {
     let delta = time.delta_secs();
     let mut speed_multiplier = match overclock.mode {
@@ -43,6 +44,26 @@ pub fn update_enemies(
             }
 
             match boss.state {
+                BossAttackState::Intro => {
+                    // Descend from ceiling (y = 400.0) to landing height (y = -96.0)
+                    let target_y = -96.0;
+                    if transform.translation.y > target_y {
+                        transform.translation.y -= 250.0 * delta;
+                        if transform.translation.y <= target_y {
+                            transform.translation.y = target_y;
+                        }
+                    }
+
+                    if boss.state_timer == 0.0 {
+                        boss.state = BossAttackState::Patrol;
+                        boss.attack_cooldown_timer = 2.0;
+
+                        // Despawn speech bubble
+                        for (speech_entity, _) in &speech_query {
+                            commands.entity(speech_entity).despawn();
+                        }
+                    }
+                }
                 BossAttackState::Patrol => {
                     // Standard patrolling behavior
                     // Check if time to initiate an attack
@@ -220,6 +241,9 @@ pub fn update_enemies(
                 }
             } else {
                 match boss.state {
+                    BossAttackState::Intro => {
+                        sprite.color = Color::srgb(1.0, 0.0, 0.0);
+                    }
                     BossAttackState::Patrol => {
                         match overclock.mode {
                             CpuClockMode::Overclocked => {
