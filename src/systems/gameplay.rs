@@ -176,7 +176,7 @@ pub fn handle_damage(
     if let Ok((
         player_trans,
         _velocity,
-        _jump_state,
+        jump_state,
         dash_state,
         glitch_state,
         mut ram_state,
@@ -281,7 +281,8 @@ pub fn handle_damage(
                     && player_top > enemy_bottom
                     && player_bottom < enemy_top
                 {
-                    if dash_state.dash_timer > 0.0 {
+                    let is_attacking = dash_state.dash_timer > 0.0 || jump_state.is_smashing;
+                    if is_attacking {
                         if let Some(ref mut boss) = boss_opt {
                             if boss.invulnerable_timer == 0.0 {
                                 if boss.health > 1 {
